@@ -4,11 +4,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.interop.UIKitView
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.readValue
 import platform.AVFoundation.*
+import platform.CoreGraphics.CGRectZero
 import platform.Foundation.NSDate
 import platform.Foundation.timeIntervalSince1970
 import platform.QuartzCore.CATransaction
-import platform.QuartzCore.kCATransactionDisableActions
 import platform.UIKit.UIColor
 import platform.UIKit.UIView
 import platform.darwin.NSObject
@@ -41,7 +42,6 @@ actual fun ScannerView(
                 val code = metadataObj?.stringValue ?: return
 
                 val now = NSDate().timeIntervalSince1970 * 1000.0
-                // Debounce od 3.5 sekunde (isto kao na Androidu)
                 if (code != lastCode || (now - lastTime) > 3500) {
                     lastCode = code
                     lastTime = now
@@ -74,19 +74,17 @@ actual fun ScannerView(
         }
 
         onDispose {
-            if (captureSession.isRunning()) {
-                captureSession.stopRunning()
-            }
+            captureSession.stopRunning()
         }
     }
 
     UIKitView(
         factory = {
-            object : UIView(frame = platform.CoreGraphics.CGRectZero.readValue()) {
+            object : UIView(frame = CGRectZero.readValue()) {
                 override fun layoutSubviews() {
                     super.layoutSubviews()
                     CATransaction.begin()
-                    CATransaction.setValue(true, kCATransactionDisableActions)
+                    CATransaction.setDisableActions(true)
                     previewLayer.frame = bounds
                     CATransaction.commit()
                 }
