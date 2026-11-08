@@ -1,0 +1,47 @@
+name: Build iOS IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build-ios:
+    runs-on: macos-14
+
+    steps:
+      - name: Preuzimanje koda
+        uses: actions/checkout@v4
+
+      - name: Podešavanje Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Dozvola za izvršavanje Gradle-a
+        run: chmod +x gradlew
+
+      - name: Kompajliranje iOS Aplikacije
+        run: |
+          xcodebuild -project iosApp/iosApp.xcodeproj \
+            -scheme iosApp \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build_output \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Pakovanje u .ipa fajl
+        run: |
+          mkdir -p Payload
+          cp -r build_output/Build/Products/Release-iphoneos/*.app Payload/
+          zip -r TaposUtovar.ipa Payload
+
+      - name: Upload gotovog .ipa fajla
+        uses: actions/upload-artifact@v4
+        with:
+          name: TaposUtovar-iOS-IPA
+          path: TaposUtovar.ipa
